@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: otp_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - my_network
+
+  redis:
+    image: redis:alpine
+    command: ["redis-server", "--requirepass", "myredis"]
+    ports:
+      - "6380:6379"
+    networks:
+      - my_network
+
+  app:
+    build: .
+    ports:
+      - "9898:9898"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/otp_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379 # Внутренний порт контейнера Redis
+      SPRING_REDIS_PASSWORD: myredis
+    networks:
+      - my_network
+
+volumes:
+  postgres_data:
+
+networks:
+  my_network:
+    driver: bridge
